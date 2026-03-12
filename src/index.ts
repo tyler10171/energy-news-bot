@@ -1,20 +1,31 @@
 import { fetchAllNews } from "./news";
 import { initBot, sendNewsDigest } from "./telegram";
 import { CONFIG } from "./config";
+import { filterNewOnly, markAsSent } from "./history";
 
 async function runOnce(): Promise<void> {
   console.log("=".repeat(50));
   console.log(`[${new Date().toLocaleString("ko-KR")}] 뉴스 브리핑 시작`);
 
   try {
-    const { international, domestic } = await fetchAllNews();
+    let { international, domestic } = await fetchAllNews();
+
+    // 오늘 이미 보낸 뉴스 제외
+    international = filterNewOnly(international);
+    domestic = filterNewOnly(domestic);
 
     if (international.length === 0 && domestic.length === 0) {
-      console.log("[Info] 수집된 뉴스가 없습니다.");
+      console.log("[Info] 새로운 뉴스가 없습니다 (이미 발송된 뉴스만 수집됨).");
       return;
     }
 
+    console.log(`[News] 신규 뉴스: 해외 ${international.length}건, 국내 ${domestic.length}건`);
     await sendNewsDigest(international, domestic);
+
+    // 보낸 뉴스 기록
+    const allTitles = [...international, ...domestic].map((n) => n.title);
+    markAsSent(allTitles);
+
     console.log("[완료] 브리핑 전송 성공!");
   } catch (error) {
     console.error("[에러] 브리핑 전송 실패:", error);

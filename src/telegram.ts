@@ -1,6 +1,7 @@
 import TelegramBot from "node-telegram-bot-api";
 import { CONFIG } from "./config";
 import { NewsItem } from "./news";
+import { getMediaBias, getBiasLegend } from "./bias";
 
 let bot: TelegramBot;
 
@@ -27,7 +28,9 @@ function formatDateTime(): string {
 }
 
 function formatNewsItem(item: NewsItem, index: number): string {
-  const source = item.source ? ` — ${escapeHtml(item.source)}` : "";
+  const bias = getMediaBias(item.source);
+  const biasTag = bias.label ? ` ${bias.emoji}${bias.label}` : "";
+  const source = item.source ? ` — ${escapeHtml(item.source)}${biasTag}` : "";
   return `${index + 1}. <a href="${item.link}">${escapeHtml(item.title)}</a>${source}`;
 }
 
@@ -65,6 +68,7 @@ export async function sendNewsDigest(
   }
 
   message += `━━━━━━━━━━━━━━━━━━━━\n`;
+  message += `📌 언론 성향: ${getBiasLegend()}\n`;
   message += `🤖 Energy News Bot | 매시 자동 수집`;
 
   // 텔레그램 메시지 길이 제한 (4096자)

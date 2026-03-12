@@ -3,3 +3,4 @@ node_modules
 dist
 bot.log
 bot-error.log
+sent-today.json
