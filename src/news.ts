@@ -43,22 +43,30 @@ async function fetchGoogleNews(
     const isIntl = category === "international";
     const hl = isIntl ? "en" : "ko";
     const gl = isIntl ? "US" : "KR";
-    const url = `${CONFIG.googleNewsRss}?q=${query}&hl=${hl}&gl=${gl}&ceid=${gl}:${hl}`;
+    const url = `${CONFIG.googleNewsRss}?q=${query}+when:1d&hl=${hl}&gl=${gl}&ceid=${gl}:${hl}`;
 
     const feed = await parser.parseURL(url);
+    const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Seoul" });
 
-    return (feed.items || []).slice(0, 3).map((item) => ({
-      title: cleanHtml(item.title || ""),
-      link: item.link || "",
-      source: item.creator || extractSource(item.title || ""),
-      pubDate: item.pubDate || "",
-      snippet: item.contentSnippet
-        ? extractSummary(item.contentSnippet)
-        : item.content
-        ? extractSummary(item.content)
-        : "",
-      category,
-    }));
+    return (feed.items || [])
+      .filter((item) => {
+        if (!item.pubDate) return true;
+        const pubDate = new Date(item.pubDate).toLocaleDateString("en-CA", { timeZone: "Asia/Seoul" });
+        return pubDate === today;
+      })
+      .slice(0, 3)
+      .map((item) => ({
+        title: cleanHtml(item.title || ""),
+        link: item.link || "",
+        source: item.creator || extractSource(item.title || ""),
+        pubDate: item.pubDate || "",
+        snippet: item.contentSnippet
+          ? extractSummary(item.contentSnippet)
+          : item.content
+          ? extractSummary(item.content)
+          : "",
+        category,
+      }));
   } catch (error) {
     console.error(`[News] ${keyword} 검색 실패:`, error);
     return [];
